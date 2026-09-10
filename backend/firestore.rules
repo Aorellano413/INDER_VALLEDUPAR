@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'superAdmin';
+    }
+
+    function isPropietario() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'propietario';
+    }
+
+    function isPropietarioDeSede(sedeId) {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.sedeAsignada == sedeId;
+    }
+
+    match /usuarios/{userId} {
+      allow read: if isSuperAdmin() || request.auth.uid == userId;
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (request.auth.uid == userId && request.resource.data.rol == resource.data.rol);
+    }
+
+    match /sedes/{sedeId} {
+      allow read: if true;
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    match /canchas/{canchaId} {
+      allow read: if true;
+      allow create: if (isSuperAdmin() || (isPropietario() && isPropietarioDeSede(request.resource.data.sedeId)))
+        && request.resource.data.keys().hasAll(['nombre', 'sedeId']);
+      allow update, delete: if isSuperAdmin() ||
+        (isPropietario() && isPropietarioDeSede(resource.data.sedeId));
+    }
+
+    match /reservas/{reservaId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['canchaId', 'estado', 'nombre', 'correo'])
+        && request.resource.data.estado == 'pendiente';
+      allow update, delete: if isSuperAdmin() ||
+        (isPropietario() && isPropietarioDeSede(resource.data.sedeId));
+    }
+
+    match /bloqueos/{bloqueoId} {
+      allow read: if true;
+      allow create, update, delete: if isSuperAdmin() || isPropietario();
+    }
+
+    match /auditoria/{auditoriaId} {
+      allow read: if isSuperAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+  }
+}
