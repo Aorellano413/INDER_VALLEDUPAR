@@ -7,6 +7,7 @@ import '../widgets/sede_tarjeta..dart';
 import '../widgets/reserva_elemento.dart';
 import '../widgets/reserva_detalle_hoja.dart';
 import '../widgets/sede_formulario_hoja..dart';
+import '../routes/app_rutas.dart';
 
 const kPrimaryColor = Color(0xFF101B2E);
 
@@ -233,8 +234,37 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 child: Icon(Icons.admin_panel_settings,
                     color: Colors.white, size: 32)),
           ),
-          _drawerTile(Icons.location_city, 'Sedes', _Seccion.sedes),
-          _drawerTile(Icons.event_available, 'Reservas', _Seccion.reservas),
+
+          _drawerTile(
+            Icons.location_city,
+            'Sedes',
+            _Seccion.sedes,
+          ),
+
+          _drawerTile(
+            Icons.event_available,
+            'Reservas',
+            _Seccion.reservas,
+          ),
+
+          ListTile(
+            leading: const Icon(
+              Icons.analytics_outlined,
+              color: kPrimaryColor,
+            ),
+            title: const Text(
+              'Reportes',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(
+                context,
+                AppRoutes.adminReportes,
+              );
+            },
+          ),
+
           const Divider(),
           _drawerTile(Icons.people, 'Usuarios', _Seccion.usuarios),
           _drawerTile(Icons.block, 'Bloqueos', _Seccion.bloqueos),

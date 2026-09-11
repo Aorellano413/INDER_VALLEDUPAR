@@ -44,7 +44,7 @@ class InderApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeCtrl.mode,
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.adminDashboard,
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
