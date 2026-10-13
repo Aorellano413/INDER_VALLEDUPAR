@@ -25,6 +25,7 @@ class AppRoutes {
   static const String adminDashboard = '/admin/dashboard';
   static const String superAdminUsuarios = '/admin/usuarios';
   static const String adminBloqueos = '/admin/bloqueos';
+  static const String adminReportes = '/admin/reportes';
   static const String configJefeInder = '/admin/config-jefe';
 
 
