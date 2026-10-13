@@ -7,6 +7,7 @@ const canchasRoutes = require('./routes/canchas.routes');
 const reservasRoutes = require('./routes/reservas.routes');
 const bloqueosRoutes = require('./routes/bloqueos.routes');
 const estadisticasRoutes = require('./routes/estadisticas.routes');
+const auditoriaRoutes = require('./routes/auditoria.routes');
 
 const app = express();
 const PORT = 3000;
@@ -24,6 +25,7 @@ app.use('/api', canchasRoutes);
 app.use('/api', reservasRoutes);
 app.use('/api', bloqueosRoutes);
 app.use('/api', estadisticasRoutes);
+app.use('/api', auditoriaRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);

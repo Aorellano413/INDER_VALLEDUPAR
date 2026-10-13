@@ -2,8 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../controllers/autenticacion_controlador..dart';
+import '../controllers/autenticacion_controlador.dart';
 import '../routes/app_rutas.dart';
+import '../services/sesion.dart';
 
 class LoginAdminView extends StatefulWidget {
   const LoginAdminView({super.key});
@@ -30,6 +31,16 @@ class _LoginAdminViewState extends State<LoginAdminView> {
     super.dispose();
   }
 
+  void _iniciarSesion(AuthController auth) {
+    final user = auth.currentUser;
+    if (user == null) return;
+
+    Sesion.iniciar({
+      'correo': _emailController.text.trim(),
+      'rol': user.isSuperAdmin ? 'superAdmin' : 'propietario',
+    });
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
@@ -49,6 +60,7 @@ class _LoginAdminViewState extends State<LoginAdminView> {
         final user = authController.currentUser;
 
         if (user != null && !user.is2FAEnabled) {
+          _iniciarSesion(authController);
           Navigator.pushNamed(context, AppRoutes.activar2FA);
         } else {
           setState(() => _requires2FA = true);
@@ -89,6 +101,7 @@ class _LoginAdminViewState extends State<LoginAdminView> {
       return;
     }
 
+    _iniciarSesion(auth);
     Navigator.pushReplacementNamed(context, ruta);
   }
 

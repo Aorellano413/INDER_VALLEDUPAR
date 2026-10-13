@@ -1,7 +1,7 @@
 // lib/views/propietario_canchas_view.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../controllers/autenticacion_controlador..dart';
+import '../controllers/autenticacion_controlador.dart';
 import '../controllers/canchas_controlador.dart';
 import '../models/cancha_modelo.dart';
 import '../widgets/cancha_formulario_hoja.dart';

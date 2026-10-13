@@ -11,7 +11,6 @@ import '../views/propietario_dashboard_vista.dart.dart';
 import '../views/propietario_canchas_vista.dart';
 import '../views/admin_bloqueos_vista.dart';
 import '../views/activar_2fa_vista.dart';
-import '../views/reportes_reservas_vista.dart';
 
 class AppRoutes {
 
@@ -45,7 +44,6 @@ class AppRoutes {
     adminBloqueos: (context) => const AdminBloqueosVista(),
     propietarioDashboard: (context) => const PropietarioDashboardView(),
     propietarioCanchas: (context) => const PropietarioCanchasView(),
-    adminReportes: (context) => const ReportesReservasView(),
   };
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {

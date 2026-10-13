@@ -7,7 +7,7 @@ import 'controllers/tema_controlador.dart';
 import 'controllers/sedes_controlador.dart';
 import 'controllers/reserva_controlador.dart';
 import 'controllers/canchas_controlador.dart';
-import 'controllers/autenticacion_controlador..dart';
+import 'controllers/autenticacion_controlador.dart';
 import 'theme/app_tema.dart';
 import 'routes/app_rutas.dart';
 
@@ -43,8 +43,7 @@ class InderApp extends StatelessWidget {
       title: 'INDER - Valledupar',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: themeCtrl.mode,
-      initialRoute: AppRoutes.adminDashboard,
+      initialRoute: AppRoutes.login,
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );

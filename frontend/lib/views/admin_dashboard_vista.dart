@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../controllers/autenticacion_controlador.dart';
 import '../controllers/sedes_controlador.dart';
 import '../routes/app_rutas.dart';
 import '../services/firestore_servicio.dart';
+import '../services/sesion.dart';
 import '../widgets/sede_tarjeta..dart';
 import '../widgets/reserva_elemento.dart';
 import '../widgets/reserva_detalle_hoja.dart';
 import '../widgets/sede_formulario_hoja..dart';
-import '../routes/app_rutas.dart';
+import 'pantalla_auditoria.dart';
 
 const kPrimaryColor = Color(0xFF101B2E);
 
@@ -28,17 +30,24 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   bool _loadingReservas = true;
   String _searchQuery = "";
 
+  bool _verificandoSesion = true;
+
   @override
   void initState() {
     super.initState();
-    _cargarReservas();
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
       });
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SedesController>(context, listen: false).escucharSedes();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _verificarAccesoAdmin();
+      if (!mounted) return;
+      final auth = Provider.of<AuthController>(context, listen: false);
+      if (auth.isAuthenticated) {
+        _cargarReservas();
+        Provider.of<SedesController>(context, listen: false).escucharSedes();
+      }
     });
   }
 
@@ -46,6 +55,20 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _verificarAccesoAdmin() async {
+    if (!mounted) return;
+
+    final auth = Provider.of<AuthController>(context, listen: false);
+
+    if (!auth.isAuthenticated) {
+      Navigator.pushReplacementNamed(context, AppRoutes.loginAdmin);
+    } else {
+      setState(() {
+        _verificandoSesion = false;
+      });
+    }
   }
 
   Future<void> _cargarReservas() async {
@@ -123,8 +146,9 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   }
 
   Widget _buildReservasSection() {
-    if (_loadingReservas)
+    if (_loadingReservas) {
       return const Center(child: CircularProgressIndicator());
+    }
 
     final filtered = reservasRecientes.where((r) {
       final nombre = r['nombreCompleto']?.toString().toLowerCase() ?? '';
@@ -159,6 +183,13 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   @override
   Widget build(BuildContext context) {
+    if (_verificandoSesion) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF5F7FA),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final sedesController = context.watch<SedesController>();
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -234,19 +265,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
                 child: Icon(Icons.admin_panel_settings,
                     color: Colors.white, size: 32)),
           ),
-
-          _drawerTile(
-            Icons.location_city,
-            'Sedes',
-            _Seccion.sedes,
-          ),
-
-          _drawerTile(
-            Icons.event_available,
-            'Reservas',
-            _Seccion.reservas,
-          ),
-
+          _drawerTile(Icons.location_city, 'Sedes', _Seccion.sedes),
+          _drawerTile(Icons.event_available, 'Reservas', _Seccion.reservas),
           ListTile(
             leading: const Icon(
               Icons.analytics_outlined,
@@ -258,26 +278,45 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
             ),
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(
-                context,
-                AppRoutes.adminReportes,
-              );
+              Navigator.pushNamed(context, AppRoutes.adminReportes);
             },
           ),
-
           const Divider(),
           _drawerTile(Icons.people, 'Usuarios', _Seccion.usuarios),
           _drawerTile(Icons.block, 'Bloqueos', _Seccion.bloqueos),
+          ListTile(
+            leading: const Icon(
+              Icons.fact_check_outlined,
+              color: kPrimaryColor,
+            ),
+            title: const Text(
+              'Auditoría',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PantallaAuditoria()),
+              );
+            },
+          ),
           const Spacer(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Cerrar sesión',
                 style: TextStyle(color: Colors.red)),
-            onTap: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              AppRoutes.login,
-              (route) => false,
-            ),
+            onTap: () async {
+              await Provider.of<AuthController>(context, listen: false)
+                  .logout();
+              Sesion.cerrar();
+              if (!mounted) return;
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.loginAdmin,
+                (route) => false,
+              );
+            },
           ),
           const SizedBox(height: 20),
         ],
@@ -304,26 +343,27 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
-Widget _buildUsuariosLoading() {
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    setState(() {
-      _seccionActual = _Seccion.sedes;
+  Widget _buildUsuariosLoading() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _seccionActual = _Seccion.sedes;
+      });
+      await Navigator.pushNamed(context, AppRoutes.superAdminUsuarios);
     });
-    await Navigator.pushNamed(context, AppRoutes.superAdminUsuarios);
-  });
-  return const Center(child: CircularProgressIndicator());
-}
+    return const Center(child: CircularProgressIndicator());
+  }
 
   Widget _buildBloqueosLoading() {
-  WidgetsBinding.instance.addPostFrameCallback((_) async {
-    setState(() {
-      _seccionActual = _Seccion.sedes;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      setState(() {
+        _seccionActual = _Seccion.sedes;
+      });
+      await Navigator.pushNamed(context, AppRoutes.adminBloqueos);
     });
-    await Navigator.pushNamed(context, AppRoutes.adminBloqueos);
-  });
 
-  return const Center(child: CircularProgressIndicator());
-}
+    return const Center(child: CircularProgressIndicator());
+  }
+
   Future<void> _mostrarFormularioSede({int? editIndex}) async {
     final controller = Provider.of<SedesController>(context, listen: false);
     final sedeParaEditar =
@@ -378,6 +418,7 @@ Widget _buildUsuariosLoading() {
       ),
     );
     if (confirmar == true) {
+      if (!mounted) return;
       await Provider.of<SedesController>(context, listen: false)
           .eliminarSedeCustom(index);
       _mostrarSnackbar('Sede eliminada');

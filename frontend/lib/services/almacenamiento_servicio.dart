@@ -17,7 +17,8 @@ class StorageService {
     required String entityId,
     required XFile imageFile,
   }) async {
-    final fileName = '${prefix}_${entityId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final fileName =
+        '${prefix}_${entityId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final ref = _storage.ref().child('$folder/$fileName');
     final metadata = SettableMetadata(contentType: 'image/jpeg');
 
@@ -32,12 +33,22 @@ class StorageService {
   Future<String> subirImagenSede({
     required String sedeId,
     required XFile imageFile,
-  }) => _subirImagen(folder: 'sedes', prefix: 'sede', entityId: sedeId, imageFile: imageFile);
+  }) =>
+      _subirImagen(
+          folder: 'sedes',
+          prefix: 'sede',
+          entityId: sedeId,
+          imageFile: imageFile);
 
   Future<String> subirImagenCancha({
     required String canchaId,
     required XFile imageFile,
-  }) => _subirImagen(folder: 'canchas', prefix: 'cancha', entityId: canchaId, imageFile: imageFile);
+  }) =>
+      _subirImagen(
+          folder: 'canchas',
+          prefix: 'cancha',
+          entityId: canchaId,
+          imageFile: imageFile);
 
   Future<void> eliminarImagen(String imageUrl) async {
     if (!esUrlFirebase(imageUrl)) return;

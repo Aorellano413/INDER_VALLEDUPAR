@@ -5,6 +5,7 @@ import '../models/sede_modelo.dart';
 import '../models/cancha_modelo.dart';
 import '../models/reserva_modelo.dart';
 import '../models/bloqueo_modelo.dart';
+import 'sesion.dart';
 
 class FirestoreService {
   static final FirestoreService _instance = FirestoreService._internal();
@@ -14,7 +15,18 @@ class FirestoreService {
   static const String baseUrl = 'http://localhost:3000/api';
   static const Duration _intervaloStream = Duration(seconds: 5);
 
-  Map<String, String> get _headers => {'Content-Type': 'application/json'};
+  Map<String, String> get _headers {
+    final u = Sesion.usuario;
+    return {
+      'Content-Type': 'application/json',
+      if (u != null) 'x-usuario-id': Uri.encodeComponent('${u['id'] ?? ''}'),
+      if (u != null)
+        'x-usuario-correo': Uri.encodeComponent('${u['correo'] ?? ''}'),
+      if (u != null)
+        'x-usuario-nombre': Uri.encodeComponent('${u['nombre'] ?? ''}'),
+      if (u != null) 'x-usuario-rol': Uri.encodeComponent('${u['rol'] ?? ''}'),
+    };
+  }
 
   dynamic _procesar(http.Response r) {
     if (r.statusCode >= 200 && r.statusCode < 300) {
@@ -25,26 +37,36 @@ class FirestoreService {
 
   String _json(Object? o) => jsonEncode(
         o,
-        toEncodable: (x) => x is DateTime ? x.toIso8601String() : x.toString(),
+        toEncodable: (x) {
+          if (x is DateTime) return x.toIso8601String();
+          try {
+            final fecha = (x as dynamic).toDate();
+            if (fecha is DateTime) return fecha.toIso8601String();
+          } catch (_) {}
+          return x.toString();
+        },
       );
 
   Future<dynamic> _get(String ruta) async =>
-      _procesar(await http.get(Uri.parse('$baseUrl$ruta')));
+      _procesar(await http.get(Uri.parse('$baseUrl$ruta'), headers: _headers));
 
-  Future<dynamic> _post(String ruta, Object? body) async => _procesar(
-      await http.post(Uri.parse('$baseUrl$ruta'), headers: _headers, body: _json(body)));
+  Future<dynamic> _post(String ruta, Object? body) async => _procesar(await http
+      .post(Uri.parse('$baseUrl$ruta'), headers: _headers, body: _json(body)));
 
-  Future<dynamic> _put(String ruta, Object? body) async => _procesar(
-      await http.put(Uri.parse('$baseUrl$ruta'), headers: _headers, body: _json(body)));
+  Future<dynamic> _put(String ruta, Object? body) async => _procesar(await http
+      .put(Uri.parse('$baseUrl$ruta'), headers: _headers, body: _json(body)));
 
-  Future<dynamic> _patch(String ruta, Object? body) async => _procesar(
-      await http.patch(Uri.parse('$baseUrl$ruta'), headers: _headers, body: _json(body)));
+  Future<dynamic> _patch(String ruta, Object? body) async =>
+      _procesar(await http.patch(Uri.parse('$baseUrl$ruta'),
+          headers: _headers, body: _json(body)));
 
-  Future<dynamic> _delete(String ruta) async =>
-      _procesar(await http.delete(Uri.parse('$baseUrl$ruta')));
+  Future<dynamic> _delete(String ruta) async => _procesar(
+      await http.delete(Uri.parse('$baseUrl$ruta'), headers: _headers));
 
   List<T> _mapList<T>(dynamic data, T Function(Map<String, dynamic>) mapper) {
-    return (data as List).map((e) => mapper(Map<String, dynamic>.from(e))).toList();
+    return (data as List)
+        .map((e) => mapper(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   List<Map<String, dynamic>> _mapRaw(dynamic data) {
@@ -106,7 +128,8 @@ class FirestoreService {
     await _delete('/canchas/$canchaId');
   }
 
-  Future<String> crearReserva(ReservaModel reserva, String canchaId, String sedeId) async {
+  Future<String> crearReserva(
+      ReservaModel reserva, String canchaId, String sedeId) async {
     final data = reserva.toJson()
       ..['canchaId'] = canchaId
       ..['sedeId'] = sedeId;
@@ -117,13 +140,17 @@ class FirestoreService {
   Stream<List<Map<String, dynamic>>> getReservasStream() =>
       _poll(() async => _mapRaw(await _get('/reservas')));
 
-  Stream<List<Map<String, dynamic>>> getReservasPorEstadoStream(String estado) =>
+  Stream<List<Map<String, dynamic>>> getReservasPorEstadoStream(
+          String estado) =>
       _poll(() async => _mapRaw(await _get('/reservas?estado=$estado')));
 
-  Future<List<Map<String, dynamic>>> getReservasPorUsuario(String correo) async =>
-      _mapRaw(await _get('/reservas?correo=${Uri.encodeQueryComponent(correo)}'));
+  Future<List<Map<String, dynamic>>> getReservasPorUsuario(
+          String correo) async =>
+      _mapRaw(
+          await _get('/reservas?correo=${Uri.encodeQueryComponent(correo)}'));
 
-  Future<void> actualizarEstadoReserva(String reservaId, String nuevoEstado) async {
+  Future<void> actualizarEstadoReserva(
+      String reservaId, String nuevoEstado) async {
     await _patch('/reservas/$reservaId/estado', {'estado': nuevoEstado});
   }
 
@@ -134,7 +161,8 @@ class FirestoreService {
   Future<List<Map<String, dynamic>>> getReservasCompletas() async =>
       _mapRaw(await _get('/reservas-completas'));
 
-  Future<List<Map<String, dynamic>>> getReservasCompletasPorSede(String sedeId) async =>
+  Future<List<Map<String, dynamic>>> getReservasCompletasPorSede(
+          String sedeId) async =>
       _mapRaw(await _get('/reservas-completas?sedeId=$sedeId'));
 
   Future<bool> verificarDisponibilidad({
@@ -189,5 +217,15 @@ class FirestoreService {
   }) async {
     return !(await verificarDisponibilidad(
         canchaId: canchaId, fecha: fecha, horaReserva: horaReserva));
+  }
+
+  Future<List<Map<String, dynamic>>> getAuditoria(
+      {String? entidad, String? usuario}) async {
+    final params = <String, String>{};
+    if (entidad != null && entidad.isNotEmpty) params['entidad'] = entidad;
+    if (usuario != null && usuario.isNotEmpty) params['usuario'] = usuario;
+    final query =
+        params.isEmpty ? '' : '?${Uri(queryParameters: params).query}';
+    return _mapRaw(await _get('/auditoria$query'));
   }
 }

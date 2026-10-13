@@ -1,14 +1,15 @@
 const { db, FieldValue } = require('../config/firebase');
 const { serializar, docAJson, aFirestore } = require('../utils/serializar');
 const { verificarDisponibilidad } = require('../services/disponibilidad.service');
+const { registrar, obtenerDoc } = require('../services/auditoria.service');
 
 const crear = async (req, res) => {
-  const data = {
-    ...aFirestore(req.body),
-    estado: 'pendiente',
+  const datos = { ...aFirestore(req.body), estado: 'pendiente' };
+  const ref = await db.collection('reservas').add({
+    ...datos,
     createdAt: FieldValue.serverTimestamp(),
-  };
-  const ref = await db.collection('reservas').add(data);
+  });
+  await registrar(req, { accion: 'CREAR', entidad: 'reserva', entidadId: ref.id, despues: datos });
   res.status(201).json({ id: ref.id });
 };
 
@@ -49,15 +50,24 @@ const listarCompletas = async (req, res) => {
 };
 
 const actualizarEstado = async (req, res) => {
+  const antes = await obtenerDoc('reservas', req.params.id);
   await db.collection('reservas').doc(req.params.id).update({
     estado: req.body.estado,
     updatedAt: FieldValue.serverTimestamp(),
+  });
+  await registrar(req, {
+    accion: 'ACTUALIZAR',
+    entidad: 'reserva',
+    entidadId: req.params.id,
+    cambios: [{ campo: 'estado', antes: antes ? antes.estado : null, despues: req.body.estado }],
   });
   res.json({ ok: true });
 };
 
 const eliminar = async (req, res) => {
+  const antes = await obtenerDoc('reservas', req.params.id);
   await db.collection('reservas').doc(req.params.id).delete();
+  await registrar(req, { accion: 'ELIMINAR', entidad: 'reserva', entidadId: req.params.id, antes });
   res.json({ ok: true });
 };
 

@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:otp/otp.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../controllers/autenticacion_controlador..dart';
+import '../controllers/autenticacion_controlador.dart';
 import '../routes/app_rutas.dart';
 
 class Activar2FAView extends StatefulWidget {

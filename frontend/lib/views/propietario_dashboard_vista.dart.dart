@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../controllers/autenticacion_controlador..dart';
+import '../controllers/autenticacion_controlador.dart';
 import '../controllers/canchas_controlador.dart';
 import '../services/firestore_servicio.dart';
 import '../routes/app_rutas.dart';
