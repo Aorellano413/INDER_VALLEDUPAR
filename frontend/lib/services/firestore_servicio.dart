@@ -219,6 +219,23 @@ class FirestoreService {
         canchaId: canchaId, fecha: fecha, horaReserva: horaReserva));
   }
 
+  /// Reservas del período [desde, hasta) para el reporte del SuperAdmin.
+  /// 'desde' es inclusivo y 'hasta' exclusivo. Se envían en UTC (ISO 8601 con
+  /// 'Z') para que el backend no dependa de su propia zona horaria.
+  Future<List<Map<String, dynamic>>> getReporteReservas({
+    required DateTime desde,
+    required DateTime hasta,
+    String? sedeId,
+  }) async {
+    final params = <String, String>{
+      'desde': desde.toUtc().toIso8601String(),
+      'hasta': hasta.toUtc().toIso8601String(),
+      if (sedeId != null && sedeId.isNotEmpty) 'sedeId': sedeId,
+    };
+    return _mapRaw(
+        await _get('/reportes/reservas?${Uri(queryParameters: params).query}'));
+  }
+
   Future<List<Map<String, dynamic>>> getAuditoria(
       {String? entidad, String? usuario}) async {
     final params = <String, String>{};

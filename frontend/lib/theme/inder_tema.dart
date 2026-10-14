@@ -227,29 +227,52 @@ class InderTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         labelStyle: GoogleFonts.poppins(
-            fontSize: 14, color: InderColors.textMuted),
+          fontSize: 14,
+          color: InderColors.textMuted,
+        ),
         hintStyle: GoogleFonts.poppins(
-            fontSize: 14, color: InderColors.textMuted),
+          fontSize: 14,
+          color: InderColors.textMuted,
+        ),
         helperStyle: GoogleFonts.poppins(
-            fontSize: 12, color: InderColors.textMuted),
-        errorStyle:
-            GoogleFonts.poppins(fontSize: 12, color: InderColors.cancelado),
+          fontSize: 12,
+          color: InderColors.textMuted,
+        ),
+        errorStyle: GoogleFonts.poppins(
+          fontSize: 12,
+          color: InderColors.cancelado,
+        ),
         prefixIconColor: InderColors.textMuted,
         suffixIconColor: InderColors.textMuted,
         border: fieldBorder,
         enabledBorder: fieldBorder,
         focusedBorder: fieldBorder.copyWith(
-          borderSide: const BorderSide(color: InderColors.ink, width: 2),
+          borderSide: const BorderSide(
+            color: InderColors.ink,
+            width: 2,
+          ),
         ),
         errorBorder: fieldBorder.copyWith(
-          borderSide: const BorderSide(color: InderColors.cancelado),
+          borderSide: const BorderSide(
+            color: InderColors.cancelado,
+          ),
         ),
         focusedErrorBorder: fieldBorder.copyWith(
-          borderSide: const BorderSide(color: InderColors.cancelado, width: 2),
+          borderSide: const BorderSide(
+            color: InderColors.cancelado,
+            width: 2,
+          ),
         ),
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: InderColors.ink,
+        selectionColor: Color(0x33222222),
+        selectionHandleColor: InderColors.ink,
       ),
       dividerTheme: const DividerThemeData(
         color: InderColors.border,
