@@ -5,8 +5,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../controllers/sedes_controlador.dart';
 import '../models/sede_modelo.dart';
+import '../theme/inder_tema.dart';
 import '../utils/formato_utilidades.dart';
 import '../services/almacenamiento_servicio.dart';
+import 'inder_componentes.dart';
 
 class SedeFormSheet extends StatefulWidget {
   final SedeModel? sedeParaEditar;
@@ -66,24 +68,7 @@ class _SedeFormSheetState extends State<SedeFormSheet> {
 
   Widget _buildImagePreview() {
     if (_pickedPath.isEmpty) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: const Color(0xFF0083B0).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.add_a_photo_outlined, size: 26, color: Color(0xFF0083B0)),
-          ),
-          const SizedBox(height: 10),
-          const Text('Subir imagen de la sede', style: TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          const Text('Toca para seleccionar', style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-        ],
-      );
+      return const InderImagePlaceholder(title: 'Subir imagen de la sede');
     }
 
     Widget imageWidget;
@@ -107,17 +92,17 @@ class _SedeFormSheetState extends State<SedeFormSheet> {
           bottom: 10,
           right: 10,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(20),
+              color: InderColors.ink.withOpacity(0.78),
+              borderRadius: BorderRadius.circular(InderRadius.pill),
             ),
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.edit_rounded, size: 12, color: Colors.white),
-                SizedBox(width: 4),
-                Text('Cambiar', style: TextStyle(color: Colors.white, fontSize: 11)),
+                Icon(Icons.edit_rounded, size: 14, color: Colors.white),
+                SizedBox(width: 6),
+                Text('Cambiar', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -193,123 +178,97 @@ class _SedeFormSheetState extends State<SedeFormSheet> {
 
   void _mostrarError(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensaje), backgroundColor: Colors.redAccent, behavior: SnackBarBehavior.floating),
+      SnackBar(content: Text(mensaje), backgroundColor: InderColors.cancelado, behavior: SnackBarBehavior.floating),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.only(
-        left: 24, right: 24, top: 12,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 5,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+    return InderThemeScope(
+      child: Container(
+        padding: EdgeInsets.only(
+          left: 24, right: 24, top: 12,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              InderSheetHeader(
+                icon: Icons.storefront_rounded,
+                title: _esEdicion ? 'Editar sede' : 'Nueva sede',
+                subtitle: 'Datos que verán los clientes al reservar',
               ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Container(
-                  width: 40, height: 40,
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: _seleccionarImagen,
+                child: Container(
+                  height: 180,
+                  width: double.infinity,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0083B0).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.storefront_rounded, color: Color(0xFF0083B0), size: 20),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  _esEdicion ? 'Editar sede' : 'Nueva sede',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: _seleccionarImagen,
-              child: Container(
-                height: 180,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: const Color(0xFFF8FAFC),
-                  border: Border.all(
-                    color: _pickedPath.isEmpty ? const Color(0xFF0083B0).withOpacity(0.3) : Colors.transparent,
-                    width: _pickedPath.isEmpty ? 1.5 : 0,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: _buildImagePreview(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildField(_nombreCtrl, 'Nombre de la sede', Icons.home_outlined),
-            const SizedBox(height: 12),
-            _buildField(_direccionCtrl, 'Dirección', Icons.place_outlined),
-            const SizedBox(height: 12),
-            _buildField(_precioCtrl, 'Precio desde (COP, ej: 90000)', Icons.attach_money_rounded, keyboardType: TextInputType.number),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF64748B)),
-                  const SizedBox(width: 8),
-                  const Text('Horario:', style: TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0083B0).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(InderRadius.card),
+                    color: InderColors.background,
+                    border: Border.all(
+                      color: _pickedPath.isEmpty ? InderColors.borderStrong : Colors.transparent,
+                      width: _pickedPath.isEmpty ? 1.2 : 0,
                     ),
-                    child: const Text('Día - Noche', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF0083B0))),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _isUploading ? null : _guardarSede,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0F172A),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(InderRadius.card),
+                    child: _buildImagePreview(),
+                  ),
                 ),
-                child: _isUploading
-                    ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
-                          SizedBox(width: 10),
-                          Text('Subiendo imagen...', style: TextStyle(fontWeight: FontWeight.bold)),
-                        ],
-                      )
-                    : Text(
-                        _esEdicion ? 'GUARDAR CAMBIOS' : 'CREAR SEDE',
-                        style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1),
-                      ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              _buildField(_nombreCtrl, 'Nombre de la sede', Icons.home_outlined),
+              const SizedBox(height: 12),
+              _buildField(_direccionCtrl, 'Dirección', Icons.place_outlined),
+              const SizedBox(height: 12),
+              _buildField(_precioCtrl, 'Precio desde (COP, ej: 90000)', Icons.attach_money_rounded, keyboardType: TextInputType.number),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: InderColors.background,
+                  borderRadius: BorderRadius.circular(InderRadius.field),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.schedule_rounded, size: 18, color: InderColors.textMuted),
+                    const SizedBox(width: 8),
+                    const Text('Horario:', style: TextStyle(fontSize: 13, color: InderColors.textMuted)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: InderColors.goldTint,
+                        borderRadius: BorderRadius.circular(InderRadius.pill),
+                      ),
+                      child: const Text('Día - Noche', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: InderColors.goldDeep)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isUploading ? null : _guardarSede,
+                  child: _isUploading
+                      ? const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(width: 18, height: 18, child: CircularProgressIndicator(color: InderColors.textMuted, strokeWidth: 2)),
+                            SizedBox(width: 10),
+                            Text('Subiendo imagen...'),
+                          ],
+                        )
+                      : Text(_esEdicion ? 'GUARDAR CAMBIOS' : 'CREAR SEDE'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -322,11 +281,6 @@ class _SedeFormSheetState extends State<SedeFormSheet> {
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, size: 20),
-        filled: true,
-        fillColor: const Color(0xFFF8FAFC),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF0083B0), width: 2)),
       ),
       validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo obligatorio' : null,
     );

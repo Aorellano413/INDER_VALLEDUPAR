@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import '../controllers/canchas_controlador.dart';
 import '../models/cancha_modelo.dart';
 import '../services/almacenamiento_servicio.dart';
+import '../theme/inder_tema.dart';
+import 'inder_componentes.dart';
 
 class CanchaFormSheet extends StatefulWidget {
   final String sedeId;
@@ -77,25 +79,17 @@ class _CanchaFormSheetState extends State<CanchaFormSheet> {
     }
   }
 
-  Widget _buildImagePreview() {
-    if (_pickedPath.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add_photo_alternate_outlined,
-              size: 40,
-              color: Colors.black54,
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Subir imagen de la cancha',
-              style: TextStyle(color: Colors.black54),
-            ),
-          ],
+  Widget _errorImagen() => Container(
+        color: InderColors.canceladoSoft,
+        child: const Center(
+          child: Icon(Icons.broken_image_outlined,
+              size: 48, color: InderColors.canceladoOnSoft),
         ),
       );
+
+  Widget _buildImagePreview() {
+    if (_pickedPath.isEmpty) {
+      return const InderImagePlaceholder(title: 'Subir imagen de la cancha');
     }
 
     if (_pickedImage != null) {
@@ -103,23 +97,13 @@ class _CanchaFormSheetState extends State<CanchaFormSheet> {
         return Image.network(
           _pickedPath,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: Colors.grey.shade300,
-              child: const Icon(Icons.error, size: 64, color: Colors.red),
-            );
-          },
+          errorBuilder: (context, error, stackTrace) => _errorImagen(),
         );
       } else {
         return Image.file(
           File(_pickedPath),
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              color: Colors.grey.shade300,
-              child: const Icon(Icons.error, size: 64, color: Colors.red),
-            );
-          },
+          errorBuilder: (context, error, stackTrace) => _errorImagen(),
         );
       }
     }
@@ -130,28 +114,18 @@ class _CanchaFormSheetState extends State<CanchaFormSheet> {
         loadingBuilder: (context, child, loadingProgress) {
           if (loadingProgress == null) return child;
           return Container(
-            color: Colors.grey.shade200,
+            color: InderColors.background,
             child: const Center(child: CircularProgressIndicator()),
           );
         },
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            color: Colors.grey.shade300,
-            child: const Icon(Icons.error, size: 64, color: Colors.red),
-          );
-        },
+        errorBuilder: (context, error, stackTrace) => _errorImagen(),
       );
     }
 
     return Image.asset(
       _pickedPath,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          color: Colors.grey.shade300,
-          child: const Icon(Icons.error, size: 64, color: Colors.red),
-        );
-      },
+      errorBuilder: (context, error, stackTrace) => _errorImagen(),
     );
   }
 
@@ -257,7 +231,7 @@ class _CanchaFormSheetState extends State<CanchaFormSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(mensaje),
-        backgroundColor: Colors.red,
+        backgroundColor: InderColors.cancelado,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -265,192 +239,173 @@ class _CanchaFormSheetState extends State<CanchaFormSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-      ),
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.circular(8),
-                ),
+    return InderThemeScope(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 12,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        ),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              InderSheetHeader(
+                icon: Icons.sports_soccer_rounded,
+                title: _esEdicion ? 'Editar Cancha' : 'Crear Nueva Cancha',
+                subtitle: 'Información que verán los clientes',
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _esEdicion ? 'Editar Cancha' : 'Crear Nueva Cancha',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 20),
 
-            // Imagen
-            GestureDetector(
-              onTap: _seleccionarImagen,
-              child: Container(
-                height: 170,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: const Color(0xFFF2F4F7),
-                  border: Border.all(color: const Color(0xFFE0E3E7)),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: _buildImagePreview(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Nombre
-            TextFormField(
-              controller: _nombreCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Nombre de la cancha',
-                prefixIcon: Icon(Icons.sports_soccer),
-                border: OutlineInputBorder(),
-                hintText: 'Ej: Cancha Techada #1',
-              ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Ingrese el nombre' : null,
-            ),
-            const SizedBox(height: 12),
-
-            // Tipo de cancha
-            DropdownButtonFormField<TipoCancha>(
-              value: _tipoSeleccionado,
-              decoration: const InputDecoration(
-                labelText: 'Tipo de cancha',
-                prefixIcon: Icon(Icons.category),
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: TipoCancha.abierta,
-                  child: Text('Abierta'),
-                ),
-                DropdownMenuItem(
-                  value: TipoCancha.cerrada,
-                  child: Text('Cerrada'),
-                ),
-                DropdownMenuItem(
-                  value: TipoCancha.techada,
-                  child: Text('Techada'),
-                ),
-                DropdownMenuItem(
-                  value: TipoCancha.natural,
-                  child: Text('Natural'),
-                ),
-                DropdownMenuItem(
-                  value: TipoCancha.sintetica,
-                  child: Text('Sintética'),
-                ),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _tipoSeleccionado = value);
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // Precio
-            TextFormField(
-              controller: _precioCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Precio (COP)',
-                prefixIcon: Icon(Icons.attach_money),
-                border: OutlineInputBorder(),
-                hintText: 'Ej: 80000',
-                helperText: 'Solo números, sin puntos ni comas',
-              ),
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return 'Ingrese el precio';
-                }
-                if (int.tryParse(v.trim()) == null) {
-                  return 'Ingrese solo números';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // Horario
-            TextFormField(
-              controller: _horarioCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Horario',
-                prefixIcon: Icon(Icons.access_time),
-                border: OutlineInputBorder(),
-                hintText: 'Ej: 7:00 AM - 11:00 PM',
-              ),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Ingrese el horario' : null,
-            ),
-            const SizedBox(height: 12),
-
-            // Jugadores
-            TextFormField(
-              controller: _jugadoresCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Capacidad de jugadores',
-                prefixIcon: Icon(Icons.people),
-                border: OutlineInputBorder(),
-                hintText: 'Ej: 5 vs 5, 6 vs 6, 7 vs 7',
-              ),
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Ingrese la capacidad'
-                  : null,
-            ),
-            const SizedBox(height: 20),
-
-            // Botón guardar
-            SizedBox(
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _guardar,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0083B0),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              // Imagen
+              GestureDetector(
+                onTap: _seleccionarImagen,
+                child: Container(
+                  height: 170,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(InderRadius.card),
+                    color: InderColors.background,
+                    border: Border.all(
+                      color: _pickedPath.isEmpty
+                          ? InderColors.borderStrong
+                          : Colors.transparent,
+                      width: _pickedPath.isEmpty ? 1.2 : 0,
+                    ),
                   ),
-                ),
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : Icon(_esEdicion ? Icons.save : Icons.check_circle),
-                label: Text(
-                  _isUploading
-                      ? 'Subiendo imagen...'
-                      : (_esEdicion ? 'Guardar Cambios' : 'Crear Cancha'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(InderRadius.card),
+                    child: _buildImagePreview(),
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+
+              // Nombre
+              TextFormField(
+                controller: _nombreCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre de la cancha',
+                  prefixIcon: Icon(Icons.sports_soccer),
+                  hintText: 'Ej: Cancha Techada #1',
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Ingrese el nombre' : null,
+              ),
+              const SizedBox(height: 12),
+
+              // Tipo de cancha
+              DropdownButtonFormField<TipoCancha>(
+                value: _tipoSeleccionado,
+                decoration: const InputDecoration(
+                  labelText: 'Tipo de cancha',
+                  prefixIcon: Icon(Icons.category),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: TipoCancha.abierta,
+                    child: Text('Abierta'),
+                  ),
+                  DropdownMenuItem(
+                    value: TipoCancha.cerrada,
+                    child: Text('Cerrada'),
+                  ),
+                  DropdownMenuItem(
+                    value: TipoCancha.techada,
+                    child: Text('Techada'),
+                  ),
+                  DropdownMenuItem(
+                    value: TipoCancha.natural,
+                    child: Text('Natural'),
+                  ),
+                  DropdownMenuItem(
+                    value: TipoCancha.sintetica,
+                    child: Text('Sintética'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _tipoSeleccionado = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 12),
+
+              // Precio
+              TextFormField(
+                controller: _precioCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Precio (COP)',
+                  prefixIcon: Icon(Icons.attach_money),
+                  hintText: 'Ej: 80000',
+                  helperText: 'Solo números, sin puntos ni comas',
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) {
+                    return 'Ingrese el precio';
+                  }
+                  if (int.tryParse(v.trim()) == null) {
+                    return 'Ingrese solo números';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 12),
+
+              // Horario
+              TextFormField(
+                controller: _horarioCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Horario',
+                  prefixIcon: Icon(Icons.access_time),
+                  hintText: 'Ej: 7:00 AM - 11:00 PM',
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Ingrese el horario' : null,
+              ),
+              const SizedBox(height: 12),
+
+              // Jugadores
+              TextFormField(
+                controller: _jugadoresCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Capacidad de jugadores',
+                  prefixIcon: Icon(Icons.people),
+                  hintText: 'Ej: 5 vs 5, 6 vs 6, 7 vs 7',
+                ),
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Ingrese la capacidad'
+                    : null,
+              ),
+              const SizedBox(height: 24),
+
+              // Botón guardar
+              SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _guardar,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: InderColors.textMuted,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Icon(_esEdicion ? Icons.save : Icons.check_circle),
+                  label: Text(
+                    _isUploading
+                        ? 'Subiendo imagen...'
+                        : (_esEdicion ? 'Guardar Cambios' : 'Crear Cancha'),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

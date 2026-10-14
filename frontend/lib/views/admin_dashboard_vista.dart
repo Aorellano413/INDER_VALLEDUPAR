@@ -5,12 +5,16 @@ import '../controllers/sedes_controlador.dart';
 import '../routes/app_rutas.dart';
 import '../services/firestore_servicio.dart';
 import '../services/sesion.dart';
+import '../theme/inder_tema.dart';
+import '../widgets/inder_componentes.dart';
 import '../widgets/sede_tarjeta..dart';
 import '../widgets/reserva_elemento.dart';
 import '../widgets/reserva_detalle_hoja.dart';
 import '../widgets/sede_formulario_hoja..dart';
 import 'pantalla_auditoria.dart';
 
+// Se conserva por compatibilidad (era pública). Ya no se usa en esta pantalla:
+// los colores ahora vienen de InderColors (lib/theme/inder_tema.dart).
 const kPrimaryColor = Color(0xFF101B2E);
 
 enum _Seccion { sedes, reservas, usuarios, bloqueos }
@@ -86,28 +90,40 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     }
   }
 
+  // ───────────────────────── Presentación ─────────────────────────
+
+  Widget _buildEncabezado() {
+    final user = Provider.of<AuthController>(context, listen: false).currentUser;
+    return InderHeaderBanner(
+      titulo: user?.nombre ?? 'Administrador',
+      subtitulo: user?.email,
+      usuario: user?.nombre,
+      detalleUsuario: inderRolLabel(user?.rol),
+    );
+  }
+
   Widget _buildSearchBar(String hint) {
     return TextField(
       controller: _searchController,
+      textInputAction: TextInputAction.search,
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: const Icon(Icons.search, color: kPrimaryColor),
+        prefixIcon: const Icon(Icons.search_rounded),
         suffixIcon: _searchQuery.isNotEmpty
             ? IconButton(
-                icon: const Icon(Icons.clear),
+                tooltip: 'Limpiar búsqueda',
+                icon: const Icon(Icons.close_rounded),
                 onPressed: () => _searchController.clear(),
               )
             : null,
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200)),
       ),
+    );
+  }
+
+  Widget _buildCargando() {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 48),
+      child: Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -117,19 +133,31 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
         .toList();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSearchBar('Buscar sede...'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        InderSectionTitle(
+          title: 'Sedes registradas',
+          subtitle: _searchQuery.isEmpty
+              ? '${filteredSedes.length} en total'
+              : '${filteredSedes.length} resultado(s)',
+        ),
+        const SizedBox(height: 12),
         if (filteredSedes.isEmpty)
-          const Padding(
-              padding: EdgeInsets.all(32),
-              child: Text('No se encontraron sedes.'))
+          InderEmptyState(
+            icon: Icons.location_city_outlined,
+            title: 'No se encontraron sedes',
+            message: _searchQuery.isEmpty
+                ? 'Cuando registres una sede aparecerá en este listado.'
+                : 'Prueba con otro término de búsqueda.',
+          )
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: filteredSedes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (_, index) {
               final sede = filteredSedes[index];
               return SedeCard(
@@ -147,7 +175,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _buildReservasSection() {
     if (_loadingReservas) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildCargando();
     }
 
     final filtered = reservasRecientes.where((r) {
@@ -157,18 +185,31 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     }).toList();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSearchBar('Buscar por cliente...'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
+        InderSectionTitle(
+          title: 'Reservas recientes',
+          subtitle: _searchQuery.isEmpty
+              ? '${filtered.length} en total'
+              : '${filtered.length} resultado(s)',
+        ),
+        const SizedBox(height: 12),
         if (filtered.isEmpty)
-          const Padding(
-              padding: EdgeInsets.all(32), child: Text('Sin resultados.'))
+          InderEmptyState(
+            icon: Icons.event_busy_outlined,
+            title: 'Sin resultados',
+            message: _searchQuery.isEmpty
+                ? 'Todavía no hay reservas para mostrar.'
+                : 'No hay reservas que coincidan con la búsqueda.',
+          )
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: filtered.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (_, index) {
               final reserva = filtered[index];
               return ReservaItem(
@@ -184,56 +225,57 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   @override
   Widget build(BuildContext context) {
     if (_verificandoSesion) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF5F7FA),
-        body: Center(child: CircularProgressIndicator()),
+      return const InderThemeScope(
+        child: Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
       );
     }
 
     final sedesController = context.watch<SedesController>();
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: kPrimaryColor,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(_tituloSeccion,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.refresh),
+    final hPad = InderLayout.hPad(context);
+
+    return InderThemeScope(
+      child: Scaffold(
+        appBar: inderAppBar(
+          title: _tituloSeccion,
+          actions: [
+            IconButton(
+              tooltip: 'Actualizar',
+              icon: const Icon(Icons.refresh_rounded),
               onPressed: () {
                 _cargarReservas();
                 sedesController.cargarSedes();
-              }),
-        ],
-      ),
-      drawer: _buildDrawer(),
-      floatingActionButton: _seccionActual == _Seccion.sedes
-          ? FloatingActionButton.extended(
-              onPressed: () => _mostrarFormularioSede(),
-              backgroundColor: kPrimaryColor,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text('Crear sede',
-                  style: TextStyle(color: Colors.white)),
-            )
-          : null,
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await _cargarReservas();
-          await sedesController.cargarSedes();
-        },
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-          children: [
-            if (_seccionActual == _Seccion.sedes)
-              _buildSedesSection(sedesController),
-            if (_seccionActual == _Seccion.reservas) _buildReservasSection(),
-            if (_seccionActual == _Seccion.usuarios) _buildUsuariosLoading(),
-            if (_seccionActual == _Seccion.bloqueos) _buildBloqueosLoading(),
+              },
+            ),
+            const SizedBox(width: 4),
           ],
+        ),
+        drawer: _buildDrawer(),
+        floatingActionButton: _seccionActual == _Seccion.sedes
+            ? FloatingActionButton.extended(
+                onPressed: () => _mostrarFormularioSede(),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Crear sede'),
+              )
+            : null,
+        body: RefreshIndicator(
+          onRefresh: () async {
+            await _cargarReservas();
+            await sedesController.cargarSedes();
+          },
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 96),
+            children: [
+              _buildEncabezado(),
+              const SizedBox(height: 20),
+              if (_seccionActual == _Seccion.sedes)
+                _buildSedesSection(sedesController),
+              if (_seccionActual == _Seccion.reservas) _buildReservasSection(),
+              if (_seccionActual == _Seccion.usuarios) _buildUsuariosLoading(),
+              if (_seccionActual == _Seccion.bloqueos) _buildBloqueosLoading(),
+            ],
+          ),
         ),
       ),
     );
@@ -252,60 +294,161 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     }
   }
 
+  // ───────────────────────── Menú lateral ─────────────────────────
+
+  Widget _buildDrawerHeader() {
+    final user = Provider.of<AuthController>(context, listen: false).currentUser;
+    final nombre = (user?.nombre ?? 'Administrador').trim();
+    final inicial = nombre.isNotEmpty ? nombre[0].toUpperCase() : 'A';
+
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: InderColors.gold, width: 3)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          20, MediaQuery.of(context).padding.top + 20, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Image.asset(
+            'lib/images/inder.png',
+            height: 48,
+            fit: BoxFit.contain,
+            semanticLabel: 'Logotipo Alcaldía de Valledupar - INDER',
+            errorBuilder: (_, __, ___) => const SizedBox(height: 48),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              InderInitialAvatar(initial: inicial, size: 44),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nombre,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: InderColors.ink,
+                      ),
+                    ),
+                    Text(
+                      inderRolLabel(user?.rol),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: InderColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _drawerLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 6),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
+          color: InderColors.textMuted,
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool active = false,
+    bool destructive = false,
+  }) {
+    final color = destructive ? InderColors.cancelado : InderColors.ink;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        minVerticalPadding: 12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(InderRadius.field),
+        ),
+        selected: active,
+        selectedTileColor: InderColors.goldTint,
+        selectedColor: InderColors.ink,
+        leading: Icon(
+          icon,
+          color: active ? InderColors.goldDeep : (destructive ? color : InderColors.textMuted),
+        ),
+        title: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: color,
+            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+
   Widget _buildDrawer() {
     return Drawer(
       child: Column(
         children: [
-          const UserAccountsDrawerHeader(
-            decoration: BoxDecoration(color: kPrimaryColor),
-            accountName: Text("Administrador"),
-            accountEmail: null,
-            currentAccountPicture: CircleAvatar(
-                backgroundColor: Colors.white24,
-                child: Icon(Icons.admin_panel_settings,
-                    color: Colors.white, size: 32)),
-          ),
-          _drawerTile(Icons.location_city, 'Sedes', _Seccion.sedes),
-          _drawerTile(Icons.event_available, 'Reservas', _Seccion.reservas),
-          ListTile(
-            leading: const Icon(
-              Icons.analytics_outlined,
-              color: kPrimaryColor,
+          _buildDrawerHeader(),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _drawerLabel('GESTIÓN'),
+                _drawerTile(Icons.location_city_outlined, 'Sedes', _Seccion.sedes),
+                _drawerTile(Icons.event_available_outlined, 'Reservas', _Seccion.reservas),
+                _drawerItem(
+                  icon: Icons.analytics_outlined,
+                  label: 'Reportes',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, AppRoutes.adminReportes);
+                  },
+                ),
+                _drawerLabel('CONTROL'),
+                _drawerTile(Icons.people_outline_rounded, 'Usuarios', _Seccion.usuarios),
+                _drawerTile(Icons.block_outlined, 'Bloqueos', _Seccion.bloqueos),
+                _drawerItem(
+                  icon: Icons.fact_check_outlined,
+                  label: 'Auditoría',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PantallaAuditoria()),
+                    );
+                  },
+                ),
+              ],
             ),
-            title: const Text(
-              'Reportes',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, AppRoutes.adminReportes);
-            },
           ),
           const Divider(),
-          _drawerTile(Icons.people, 'Usuarios', _Seccion.usuarios),
-          _drawerTile(Icons.block, 'Bloqueos', _Seccion.bloqueos),
-          ListTile(
-            leading: const Icon(
-              Icons.fact_check_outlined,
-              color: kPrimaryColor,
-            ),
-            title: const Text(
-              'Auditoría',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PantallaAuditoria()),
-              );
-            },
-          ),
-          const Spacer(),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Cerrar sesión',
-                style: TextStyle(color: Colors.red)),
+          _drawerItem(
+            icon: Icons.logout_rounded,
+            label: 'Cerrar sesión',
+            destructive: true,
             onTap: () async {
               await Provider.of<AuthController>(context, listen: false)
                   .logout();
@@ -318,7 +461,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
               );
             },
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
         ],
       ),
     );
@@ -326,13 +469,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
 
   Widget _drawerTile(IconData icon, String label, _Seccion seccion) {
     final active = _seccionActual == seccion;
-    return ListTile(
-      leading: Icon(icon, color: active ? kPrimaryColor : Colors.black54),
-      title: Text(label,
-          style: TextStyle(
-              color: active ? kPrimaryColor : Colors.black87,
-              fontWeight: active ? FontWeight.bold : FontWeight.normal)),
-      tileColor: active ? kPrimaryColor.withOpacity(0.05) : null,
+    return _drawerItem(
+      icon: icon,
+      label: label,
+      active: active,
       onTap: () {
         setState(() {
           _seccionActual = seccion;
@@ -343,6 +483,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
     );
   }
 
+  // ───────────────────────── Navegación a módulos (sin cambios) ─────────────────────────
+
   Widget _buildUsuariosLoading() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       setState(() {
@@ -350,7 +492,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       });
       await Navigator.pushNamed(context, AppRoutes.superAdminUsuarios);
     });
-    return const Center(child: CircularProgressIndicator());
+    return _buildCargando();
   }
 
   Widget _buildBloqueosLoading() {
@@ -361,8 +503,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       await Navigator.pushNamed(context, AppRoutes.adminBloqueos);
     });
 
-    return const Center(child: CircularProgressIndicator());
+    return _buildCargando();
   }
+
+  // ───────────────────────── Hojas y diálogos ─────────────────────────
 
   Future<void> _mostrarFormularioSede({int? editIndex}) async {
     final controller = Provider.of<SedesController>(context, listen: false);
@@ -374,7 +518,8 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       useSafeArea: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(InderRadius.sheet))),
       builder: (ctx) => SedeFormSheet(
           sedeParaEditar: sedeParaEditar,
           editIndex: editIndex,
@@ -388,9 +533,7 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: const Color(0xFFEAEFF3),
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => ReservaDetalleSheet(
           reserva: reserva,
           onEstadoActualizado: () async {
@@ -403,18 +546,10 @@ class _AdminDashboardViewState extends State<AdminDashboardView> {
   Future<void> _confirmarEliminarSede(int index) async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Eliminar sede'),
-        content: const Text('¿Seguro que quieres eliminar esta sede?'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Eliminar')),
-        ],
+      builder: (_) => const InderConfirmDialog(
+        title: 'Eliminar sede',
+        message: '¿Seguro que quieres eliminar esta sede?',
+        confirmLabel: 'Eliminar',
       ),
     );
     if (confirmar == true) {

@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../controllers/autenticacion_controlador.dart';
 import '../controllers/canchas_controlador.dart';
 import '../models/cancha_modelo.dart';
+import '../theme/inder_tema.dart';
 import '../widgets/cancha_formulario_hoja.dart';
+import '../widgets/inder_componentes.dart';
 
 class PropietarioCanchasView extends StatefulWidget {
   const PropietarioCanchasView({super.key});
@@ -44,7 +46,8 @@ class _PropietarioCanchasViewState extends State<PropietarioCanchasView> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(InderRadius.sheet))),
       builder: (ctx) => CanchaFormSheet(
         sedeId: _sedeId!,
         canchaParaEditar: cancha,
@@ -63,9 +66,9 @@ class _PropietarioCanchasViewState extends State<PropietarioCanchasView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(mensaje),
-        backgroundColor: isError ? Colors.redAccent : const Color(0xFF1E293B),
+        backgroundColor: isError ? InderColors.cancelado : InderColors.ink,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(InderRadius.field)),
         margin: const EdgeInsets.all(20),
       ),
     );
@@ -73,104 +76,76 @@ class _PropietarioCanchasViewState extends State<PropietarioCanchasView> {
 
   @override
   Widget build(BuildContext context) {
+    final hPad = InderLayout.hPad(context);
+
     return ChangeNotifierProvider.value(
       value: _canchasController,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
-        appBar: AppBar(
-          elevation: 0,
-          centerTitle: true,
-          title: const Text('Panel de Canchas', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-          flexibleSpace: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
+      child: InderThemeScope(
+        child: Scaffold(
+          appBar: inderAppBar(
+            title: 'Panel de Canchas',
+            actions: [
+              IconButton(
+                tooltip: 'Actualizar',
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: () => _sedeId != null ? _canchasController.cargarCanchasPorSede(_sedeId!) : null,
               ),
-            ),
+              const SizedBox(width: 4),
+            ],
           ),
-          foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              onPressed: () => _sedeId != null ? _canchasController.cargarCanchasPorSede(_sedeId!) : null,
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
-        body: Consumer<CanchasController>(
-          builder: (context, controller, _) {
-            if (controller.isLoading) return const Center(child: CircularProgressIndicator(color: Color(0xFF0083B0)));
-            if (controller.error != null) return _buildErrorState(controller);
-            if (controller.canchas.isEmpty) return _buildEmptyState();
+          body: Consumer<CanchasController>(
+            builder: (context, controller, _) {
+              if (controller.isLoading) return const Center(child: CircularProgressIndicator());
+              if (controller.error != null) return _buildErrorState(controller);
+              if (controller.canchas.isEmpty) return _buildEmptyState();
 
-            return RefreshIndicator(
-              color: const Color(0xFF0083B0),
-              onRefresh: () async => controller.cargarCanchasPorSede(_sedeId!),
-              child: ListView.separated(
-                padding: const EdgeInsets.all(20),
-                itemCount: controller.canchas.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                itemBuilder: (_, i) => _CanchaCard(
-                  cancha: controller.canchas[i],
-                  onEditar: () => _mostrarFormulario(cancha: controller.canchas[i]),
-                  onEliminar: () => _confirmarEliminar(controller.canchas[i]),
+              return RefreshIndicator(
+                onRefresh: () async => controller.cargarCanchasPorSede(_sedeId!),
+                child: ListView.separated(
+                  padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 96),
+                  itemCount: controller.canchas.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
+                  itemBuilder: (_, i) => _CanchaCard(
+                    cancha: controller.canchas[i],
+                    onEditar: () => _mostrarFormulario(cancha: controller.canchas[i]),
+                    onEliminar: () => _confirmarEliminar(controller.canchas[i]),
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _mostrarFormulario(),
-          icon: const Icon(Icons.add_rounded, color: Colors.white),
-          label: const Text('NUEVA CANCHA', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-          backgroundColor: const Color(0xFF0083B0),
+              );
+            },
+          ),
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () => _mostrarFormulario(),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('NUEVA CANCHA'),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.sports_soccer_rounded, size: 80, color: Colors.blueGrey.shade100),
-          const SizedBox(height: 16),
-          const Text('No hay canchas registradas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-        ],
-      ),
+    return const InderEmptyState(
+      icon: Icons.sports_soccer_rounded,
+      title: 'No hay canchas registradas',
+      message: 'Usa el botón "Nueva cancha" para registrar la primera.',
     );
   }
 
   Widget _buildErrorState(CanchasController controller) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.cloud_off_rounded, size: 60, color: Colors.redAccent),
-          Text('Error: ${controller.error}'),
-          ElevatedButton(onPressed: _inicializarDatos, child: const Text('Reintentar')),
-        ],
-      ),
+    return InderErrorState(
+      message: 'Error: ${controller.error}',
+      onRetry: _inicializarDatos,
     );
   }
 
   Future<void> _confirmarEliminar(CanchaModel cancha) async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('¿Eliminar cancha?'),
-        content: Text('Vas a eliminar permanentemente "${cancha.title}".'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+      builder: (ctx) => InderConfirmDialog(
+        title: '¿Eliminar cancha?',
+        message: 'Vas a eliminar permanentemente "${cancha.title}".',
+        confirmLabel: 'Eliminar',
       ),
     );
     if (confirmar == true) await _canchasController.eliminarCancha(cancha.id!);
@@ -186,18 +161,15 @@ class _CanchaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
-      ),
+    return InderCard(
+      padding: EdgeInsets.zero,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(InderRadius.card)),
                 child: _buildImage(cancha.image),
               ),
               Positioned(top: 12, right: 12, child: _buildBadge(cancha.tipo)),
@@ -209,17 +181,27 @@ class _CanchaCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: Text(cancha.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)))),
-                    Text(cancha.price, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF10B981))),
+                    Expanded(
+                      child: Text(
+                        cancha.title,
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: InderColors.ink),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      cancha.price,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: InderColors.pagadoOnSoft),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 8,
                   children: [
                     _infoLabel(Icons.access_time_rounded, cancha.horario),
-                    const SizedBox(width: 16),
                     _infoLabel(Icons.people_outline_rounded, cancha.jugadores),
                   ],
                 ),
@@ -231,18 +213,18 @@ class _CanchaCard extends StatelessWidget {
                         onPressed: onEditar,
                         icon: const Icon(Icons.edit_note_rounded),
                         label: const Text('EDITAR'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF0083B0),
-                          side: const BorderSide(color: Color(0xFF0083B0)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     IconButton(
+                      tooltip: 'Eliminar cancha',
                       onPressed: onEliminar,
-                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                      style: IconButton.styleFrom(backgroundColor: Colors.red.shade50, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      icon: const Icon(Icons.delete_outline_rounded, color: InderColors.canceladoOnSoft),
+                      style: IconButton.styleFrom(
+                        minimumSize: const Size(48, 48),
+                        backgroundColor: InderColors.canceladoSoft,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(InderRadius.field)),
+                      ),
                     ),
                   ],
                 ),
@@ -256,28 +238,37 @@ class _CanchaCard extends StatelessWidget {
 
   Widget _buildBadge(TipoCancha tipo) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
-      child: Text(tipo.name.toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: InderColors.ink.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(InderRadius.pill),
+      ),
+      child: Text(
+        tipo.name.toUpperCase(),
+        style: const TextStyle(color: InderColors.gold, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.8),
+      ),
     );
   }
 
   Widget _infoLabel(IconData icon, String text) {
-    return Row(children: [
-      Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
-      const SizedBox(width: 4),
-      Text(text, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 16, color: InderColors.textMuted),
+      const SizedBox(width: 6),
+      Text(text, style: const TextStyle(color: InderColors.textMuted, fontSize: 13)),
     ]);
   }
 
   Widget _buildImage(String path) {
     return SizedBox(
-      height: 150, width: double.infinity,
+      height: 160, width: double.infinity,
       child: path.startsWith('http')
         ? Image.network(path, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
         : Image.asset(path, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder()),
     );
   }
 
-  Widget _placeholder() => Container(color: const Color(0xFFF1F5F9), child: const Icon(Icons.broken_image_outlined, color: Colors.blueGrey));
+  Widget _placeholder() => Container(
+        color: InderColors.goldTint,
+        child: const Center(child: Icon(Icons.sports_soccer_outlined, size: 40, color: InderColors.goldDeep)),
+      );
 }

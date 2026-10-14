@@ -43,7 +43,7 @@ class InderApp extends StatelessWidget {
       title: 'INDER - Valledupar',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      initialRoute: AppRoutes.login,
+      initialRoute: AppRoutes.loginAdmin,
       routes: AppRoutes.routes,
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );

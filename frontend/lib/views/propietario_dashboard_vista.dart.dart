@@ -7,6 +7,9 @@ import '../controllers/autenticacion_controlador.dart';
 import '../controllers/canchas_controlador.dart';
 import '../services/firestore_servicio.dart';
 import '../routes/app_rutas.dart';
+import '../theme/inder_tema.dart';
+import '../utils/reserva_estado.dart';
+import '../widgets/inder_componentes.dart';
 import '../widgets/reserva_detalle_hoja.dart';
 
 class PropietarioDashboardView extends StatefulWidget {
@@ -169,10 +172,7 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: const Color(0xFFEAEFF3),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => ReservaDetalleSheet(
         reserva: reserva,
         onEstadoActualizado: () async {
@@ -184,28 +184,15 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
     );
   }
 
+  // ───────────────────────── Estadísticas ─────────────────────────
+
   Widget _buildGraficaReservas() {
     if (_reservas.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(32),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFF0083B0).withOpacity(0.1),
-              const Color(0xFF00BCD4).withOpacity(0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.bar_chart, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              'No hay reservas en este período',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-            ),
-          ],
+      return const InderCard(
+        child: InderEmptyState(
+          icon: Icons.bar_chart_rounded,
+          title: 'No hay reservas en este período',
+          message: 'Cambia el período para ver otras reservas.',
         ),
       );
     }
@@ -221,89 +208,108 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
       if (estado == 'cancelado') canceladas++;
     }
 
-    return Container(
+    const titleStyle = TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      color: Colors.white,
+    );
+
+    return InderCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Estado de Reservas',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          const InderSectionTitle(
+            title: 'Estado de reservas',
+            subtitle: 'Resumen del período seleccionado',
           ),
           const SizedBox(height: 20),
           SizedBox(
             height: 200,
-            child: PieChart(
-              PieChartData(
-                sectionsSpace: 2,
-                centerSpaceRadius: 50,
-                sections: [
-                  PieChartSectionData(
-                    value: pendientes.toDouble(),
-                    title: '$pendientes',
-                    color: const Color(0xFFFFA000),
-                    radius: 60,
-                    titleStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PieChart(
+                  PieChartData(
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 54,
+                    sections: [
+                      PieChartSectionData(
+                        value: pendientes.toDouble(),
+                        title: '$pendientes',
+                        showTitle: pendientes > 0,
+                        color: InderColors.pendiente,
+                        radius: 52,
+                        titleStyle: titleStyle,
+                      ),
+                      PieChartSectionData(
+                        value: pagadas.toDouble(),
+                        title: '$pagadas',
+                        showTitle: pagadas > 0,
+                        color: InderColors.pagado,
+                        radius: 52,
+                        titleStyle: titleStyle,
+                      ),
+                      PieChartSectionData(
+                        value: canceladas.toDouble(),
+                        title: '$canceladas',
+                        showTitle: canceladas > 0,
+                        color: InderColors.cancelado,
+                        radius: 52,
+                        titleStyle: titleStyle,
+                      ),
+                    ],
                   ),
-                  PieChartSectionData(
-                    value: pagadas.toDouble(),
-                    title: '$pagadas',
-                    color: const Color(0xFF43A047),
-                    radius: 60,
-                    titleStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${_reservas.length}',
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w700,
+                        color: InderColors.ink,
+                        height: 1.1,
+                      ),
                     ),
-                  ),
-                  PieChartSectionData(
-                    value: canceladas.toDouble(),
-                    title: '$canceladas',
-                    color: const Color(0xFFC62828),
-                    radius: 60,
-                    titleStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    const Text(
+                      'Total',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: InderColors.textMuted,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _LegendaItem(
-                color: const Color(0xFFFFA000),
-                label: 'Pendientes',
-                value: pendientes,
+              Expanded(
+                child: _LegendaItem(
+                  estado: ReservaEstado.pendiente,
+                  label: 'Pendientes',
+                  value: pendientes,
+                ),
               ),
-              _LegendaItem(
-                color: const Color(0xFF43A047),
-                label: 'Pagadas',
-                value: pagadas,
+              const SizedBox(width: 8),
+              Expanded(
+                child: _LegendaItem(
+                  estado: ReservaEstado.pagado,
+                  label: 'Pagadas',
+                  value: pagadas,
+                ),
               ),
-              _LegendaItem(
-                color: const Color(0xFFC62828),
-                label: 'Canceladas',
-                value: canceladas,
+              const SizedBox(width: 8),
+              Expanded(
+                child: _LegendaItem(
+                  estado: ReservaEstado.cancelado,
+                  label: 'Canceladas',
+                  value: canceladas,
+                ),
               ),
             ],
           ),
@@ -315,58 +321,66 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
   @override
   Widget build(BuildContext context) {
     final authController = context.watch<AuthController>();
+    final hPad = InderLayout.hPad(context);
+    final user = authController.currentUser;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFF0083B0),
-        title: Text(
-          _sedeName,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _cargarDatos,
-            tooltip: 'Actualizar',
-          ),
-          TextButton.icon(
-            onPressed: _logout,
-            icon: const Icon(Icons.logout, color: Colors.white),
-            label: const Text('Salir', style: TextStyle(color: Colors.white)),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _cargarDatos,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _buildFiltrosTiempo(),
-            const SizedBox(height: 20),
-
-            if (_loadingEstadisticas)
-              const Center(child: CircularProgressIndicator())
-            else
-
-
-            _buildGraficaReservas(),
-
-            const SizedBox(height: 24),
-            _buildReservasSection(),
+    return InderThemeScope(
+      child: Scaffold(
+        appBar: inderAppBar(
+          title: _sedeName,
+          automaticallyImplyLeading: false,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _cargarDatos,
+              tooltip: 'Actualizar',
+            ),
+            TextButton.icon(
+              onPressed: _logout,
+              icon: const Icon(Icons.logout_rounded, size: 20),
+              label: const Text('Salir'),
+            ),
+            const SizedBox(width: 8),
           ],
         ),
-      ),
-      bottomNavigationBar: _buildBottomBar(authController),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.pushNamed(context, AppRoutes.propietarioCanchas);
-        },
-        icon: const Icon(Icons.sports_soccer),
-        label: const Text('Mis Canchas'),
-        backgroundColor: const Color(0xFF0083B0),
+        body: RefreshIndicator(
+          onRefresh: _cargarDatos,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 96),
+            children: [
+              InderHeaderBanner(
+                titulo: user?.nombre ?? 'Propietario',
+                subtitulo: user?.email,
+                usuario: user?.nombre,
+                detalleUsuario: inderRolLabel(user?.rol),
+              ),
+              const SizedBox(height: 20),
+              _buildFiltrosTiempo(),
+              const SizedBox(height: 16),
+
+              if (_loadingEstadisticas)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 48),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+
+
+              _buildGraficaReservas(),
+
+              const SizedBox(height: 24),
+              _buildReservasSection(),
+            ],
+          ),
+        ),
+        bottomNavigationBar: _buildBottomBar(authController),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.pushNamed(context, AppRoutes.propietarioCanchas);
+          },
+          icon: const Icon(Icons.sports_soccer),
+          label: const Text('Mis Canchas'),
+        ),
       ),
     );
   }
@@ -376,36 +390,36 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _FiltroChip(
+          InderFilterChip(
             label: 'Hoy',
-            isSelected: _filtroTiempo == 'hoy',
+            selected: _filtroTiempo == 'hoy',
             onTap: () {
               setState(() => _filtroTiempo = 'hoy');
               _cargarReservas();
             },
           ),
           const SizedBox(width: 8),
-          _FiltroChip(
+          InderFilterChip(
             label: 'Última semana',
-            isSelected: _filtroTiempo == 'semana',
+            selected: _filtroTiempo == 'semana',
             onTap: () {
               setState(() => _filtroTiempo = 'semana');
               _cargarReservas();
             },
           ),
           const SizedBox(width: 8),
-          _FiltroChip(
+          InderFilterChip(
             label: 'Último mes',
-            isSelected: _filtroTiempo == 'mes',
+            selected: _filtroTiempo == 'mes',
             onTap: () {
               setState(() => _filtroTiempo = 'mes');
               _cargarReservas();
             },
           ),
           const SizedBox(width: 8),
-          _FiltroChip(
+          InderFilterChip(
             label: 'Último año',
-            isSelected: _filtroTiempo == 'año',
+            selected: _filtroTiempo == 'año',
             onTap: () {
               setState(() => _filtroTiempo = 'año');
               _cargarReservas();
@@ -418,14 +432,18 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
 
 
   Widget _buildReservasSection() {
+    final mostradas = _reservas.length > 10 ? 10 : _reservas.length;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Reservas",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black87),
+        InderSectionTitle(
+          title: 'Reservas',
+          subtitle: (!_loadingReservas && _reservas.length > 10)
+              ? 'Mostrando $mostradas de ${_reservas.length}'
+              : null,
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         if (_loadingReservas)
           const Center(
             child: Padding(
@@ -434,30 +452,18 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
             ),
           )
         else if (_reservas.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                children: [
-                  Icon(Icons.event_busy, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No hay reservas en este período',
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ),
+          const InderEmptyState(
+            icon: Icons.event_busy_outlined,
+            title: 'No hay reservas en este período',
           )
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _reservas.length > 10 ? 10 : _reservas.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            itemCount: mostradas,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (_, index) {
               final reserva = _reservas[index];
-              // ✅ AGREGADO: onTap para mostrar detalle
               return _ReservaCard(
                 reserva: reserva,
                 onTap: () => _mostrarDetalleReserva(reserva),
@@ -470,34 +476,50 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
 
   Widget _buildBottomBar(AuthController authController) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Color(0x1A000000), blurRadius: 10, offset: Offset(0, -2)),
-        ],
+        border: Border(top: BorderSide(color: InderColors.border)),
       ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 18,
-            backgroundColor: Color(0xFF0083B0),
-            child: Icon(Icons.store, color: Colors.white, size: 20),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 18,
+                backgroundColor: InderColors.inkSoft,
+                child: Icon(Icons.store_rounded,
+                    color: InderColors.gold, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  authController.currentUser?.nombre ?? 'Propietario',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: InderColors.ink,
+                  ),
+                ),
+              ),
+              const Icon(Icons.timer_outlined,
+                  size: 18, color: InderColors.textMuted),
+              const SizedBox(width: 6),
+              Text(
+                _elapsedText,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: InderColors.ink,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              authController.currentUser?.nombre ?? 'Propietario',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          const Icon(Icons.timer_outlined, size: 18, color: Colors.black54),
-          const SizedBox(width: 6),
-          Text(
-            _elapsedText,
-            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -505,96 +527,63 @@ class _PropietarioDashboardViewState extends State<PropietarioDashboardView> {
 
 // ============ WIDGETS AUXILIARES ============
 
-class _FiltroChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _FiltroChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0083B0) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF0083B0) : Colors.grey.shade300,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: const Color(0xFF0083B0).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _LegendaItem extends StatelessWidget {
-  final Color color;
+  final ReservaEstado estado;
   final String label;
   final int value;
 
   const _LegendaItem({
-    required this.color,
+    required this.estado,
     required this.label,
     required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
+    final style = InderEstadoStyle.of(estado);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      decoration: BoxDecoration(
+        color: style.soft,
+        borderRadius: BorderRadius.circular(InderRadius.field),
+      ),
+      child: Column(
+        children: [
+          Icon(style.icon, size: 18, color: style.onSoft),
+          const SizedBox(height: 4),
+          Text(
+            '$value',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: style.onSoft,
+              height: 1.1,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Colors.black54),
-        ),
-        Text(
-          '$value',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-      ],
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: style.onSoft,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ✅ MODIFICADO: Agregado onTap
 class _ReservaCard extends StatelessWidget {
   final Map<String, dynamic> reserva;
-  final VoidCallback onTap; // ✅ AGREGADO
+  final VoidCallback onTap;
 
   const _ReservaCard({
     required this.reserva,
-    required this.onTap, // ✅ AGREGADO
+    required this.onTap,
   });
 
   @override
@@ -606,98 +595,62 @@ class _ReservaCard extends StatelessWidget {
         ? reserva['cancha']['title'] ?? 'Sin cancha'
         : 'Sin cancha';
 
-    final estado = reserva['estado'] ?? 'pendiente';
-    Color estadoColor;
-    switch (estado) {
-      case 'pagado':
-        estadoColor = const Color(0xFF43A047);
-        break;
-      case 'cancelado':
-        estadoColor = const Color(0xFFC62828);
-        break;
-      default:
-        estadoColor = const Color(0xFFFFA000);
-    }
+    final estado = ReservaEstadoHelper.desdeString(
+        (reserva['estado'] ?? 'pendiente').toString());
 
-    // ✅ MODIFICADO: Envuelto en InkWell
-    return InkWell(
-      onTap: onTap, // ✅ AGREGADO
-      borderRadius: BorderRadius.circular(12),
-      child: Card(
-        elevation: 0.8,
-        color: const Color(0xFFF0F3F7),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFF0083B0),
-                child: Text(
-                  inicial,
+    return InderCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          InderInitialAvatar(initial: inicial, size: 44),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  nombre,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: InderColors.ink,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 3),
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            nombre,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                    const Icon(Icons.sports_soccer_outlined,
+                        size: 14, color: InderColors.textMuted),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '$cancha • $hora',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: InderColors.textMuted,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: estadoColor.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: estadoColor.withOpacity(0.5),
-                            ),
-                          ),
-                          child: Text(
-                            estado.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: estadoColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$cancha • $hora',
-                      style: const TextStyle(color: Colors.black54, fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
-                color: Colors.black38,
-              ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              InderEstadoBadge(estado: estado, compact: true),
+              const SizedBox(height: 8),
+              const Icon(Icons.chevron_right_rounded,
+                  size: 20, color: InderColors.decor),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
